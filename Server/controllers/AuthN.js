@@ -6,6 +6,7 @@ const otp = require("../models/otp");
 const bcrypt = require("bcrypt");
 const profile = require("../models/profile");
 const jwt = require("jsonwebtoken");
+const mailSender = require("../utils/mailSender");
 require("dotenv").config();
 
 //send OTP
@@ -56,7 +57,10 @@ exports.sendOTP = async(req, res) => {
         })
     } catch (error) {
         console.log(error);
-        
+        return res.status(500).json({
+            success: false,
+            message: "OTP Could not be sent due to some error"
+        })
     }
 }
 
@@ -192,9 +196,22 @@ exports.login = async(req, res) => {
 }
 
 //changePassword
-exports.changePassword = (req, res) => {
+exports.changePassword = async(req, res) => {
     try {
+        //get data from req body -> oldPassword, newPassword, confirmNewPassword
+        const {newPassword, confirmPassword} = req.body;
+        //validate the newPasswords
+        if(newPassword !== confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "Passwords do not match"
+            })
+        }
+        //update password in DB -> probably populate krenge for getting user email to which we can send mail
         
+        //send mail for updated password
+        await mailSender(email, "Password updated", "Your password has been changed");
+        //res 
     } catch (error) {
         
     }
