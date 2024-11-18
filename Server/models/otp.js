@@ -13,10 +13,11 @@ const otpSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now(),
-        expires: 5*60
+        expires: 2*60
     }
 })
 
+//These 2 functions are middlewares
 async function sendVerificationMail(email, otp) {
     try {
         const mailResponse = await mailSender(email, "Mail sent by Shivam", otp);

@@ -10,15 +10,15 @@ const mailSender = async(email, title, body) => {
             }
         })
 
-        let info = await transporter.sendMail({
+        let sender = await transporter.sendMail({
             from: "Shivam Choudhary",
             to: "shivamchoudhary041103@gmail.com",
             subject: `${title}`,
             html: `${body}`
         })
         
-        console.log(info)
-        return info;
+        console.log(sender)
+        return sender;
     } catch (error) {
         console.log(error.message);
     }
