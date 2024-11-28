@@ -2,7 +2,7 @@
 
 const user = require("../models/user");
 const otpGenerator = require("otp-generator");
-const otp = require("../models/otp");
+const OTP = require("../models/otp");
 const bcrypt = require("bcrypt");
 const profile = require("../models/profile");
 const jwt = require("jsonwebtoken");
@@ -26,28 +26,28 @@ exports.sendOTP = async(req, res) => {
         }
 
         //generate OTP
-        var OTP = otpGenerator.generate(6, {
+        var otp = otpGenerator.generate(6, {
             upperCaseAlphabets: false,
             lowerCaseAlphabets: false,
             specialChars: false
         })
 
         //check if otp is unique
-        const result = await otp.findOne({otp: OTP});
+        const result = await OTP.findOne({otp: otp});
         while(result) {
-            OTP = otpGenerator.generate(6, {
+            otp = otpGenerator.generate(6, {
                 upperCaseAlphabets: false,
                 lowerCaseAlphabets: false,
                 specialChars: false
             })
 
-            result = await otp.findOne({otp: otp});
+            result = await OTP.findOne({otp: otp});
         }
-        console.log(OTP);
+        console.log(otp);
 
         //making entry in DB
-        const otpPayload = {email, OTP};
-        const otpBody = await otp.create(otpPayload);
+        const otpPayload = {email, otp};
+        const otpBody = await OTP.create(otpPayload);
         console.log(otpBody);
 
         res.status(200).json({
@@ -68,9 +68,9 @@ exports.sendOTP = async(req, res) => {
 exports.signUp = async(req, res) => {
     try {
         //data fetch from user form
-        const {firstName, lastName, email, password, confirmPassword, accountType, OTP} = req.body;
+        const {firstName, lastName, email, password, confirmPassword, accountType, otp} = req.body;
         //validate credentials - email, passwords, otp, name
-        if(!firstName || !lastName || !email || !password || !confirmPassword || !OTP) {
+        if(!firstName || !lastName || !email || !password || !confirmPassword || !otp) {
             res.status(403).json({
                 success: false,
                 message: "All feilds are mandatory"
@@ -92,7 +92,7 @@ exports.signUp = async(req, res) => {
             })
         }
         //find most recent otp from database
-        const otpLatest = await otp.find({email}).sort({createdAt:-1}).limit(1);
+        const otpLatest = await OTP.find({email}).sort({createdAt:-1}).limit(1);
         console.log(otpLatest);
         //match otps
         if(otpLatest.length == 0) {
@@ -101,7 +101,7 @@ exports.signUp = async(req, res) => {
                 success: false,
                 message: "OTP not found"
             })
-        } else if(otpLatest.otp != OTP) {
+        } else if(otpLatest.otp != otp) {
             res.status(400).json({
                 success: false,
                 message: "Invalid OTP"
@@ -149,26 +149,26 @@ exports.login = async(req, res) => {
             })
         }
         //check if user exists in DB
-        const existsingUser = await user.findOne({email});
-        if(!existsingUser) {
+        const existingUser = await user.findOne({email});
+        if(!existingUser) {
             return res.status(401).json({
                 success: false,
                 message: "User not found"
             })
         }
         //check if passwords match
-        if(await bcrypt.compare(password, existsingUser.password)) {
+        if(await bcrypt.compare(password, existingUser.password)) {
             //create JWT token
             const payload = {
-                email: existsingUser.email,
-                id: existsingUser._id,
-                role: existsingUser.role
+                email: existingUser.email,
+                id: existingUser._id,
+                role: existingUser.accountType
             }
             const token = jwt.sign(payload, process.env.JWT_SECRET, {
                 expiresIn: "2h"
             });
-            existsingUser.token = token;
-            existsingUser.password = undefined;
+            existingUser.token = token;
+            existingUser.password = undefined;
             //create cookies
             const options = {
                 expires: new Date(Date.now() + 3*24*60*60*1000),
@@ -178,7 +178,7 @@ exports.login = async(req, res) => {
             res.cookie("token", token, options).status(200).json({
                 success: true,
                 token,
-                existsingUser,
+                existingUser,
                 message: "Logged in successfully",
             })
         }
@@ -199,15 +199,26 @@ exports.login = async(req, res) => {
 exports.changePassword = async(req, res) => {
     try {
         //get data from req body -> oldPassword, newPassword, confirmNewPassword
-        const {newPassword, confirmPassword} = req.body;
+        const {oldPassword, newPassword, confirmPassword} = req.body;
         //validate the newPasswords
+        if(!newPassword || !confirmPassword) {
+            return res.status(401).json({
+                success: false,
+                message: "Please enter a password"
+            })
+        }
         if(newPassword !== confirmPassword) {
             return res.status(400).json({
                 success: false,
                 message: "Passwords do not match"
             })
         }
-        //update password in DB -> probably populate krenge for getting user email to which we can send mail
+        //fetch user data from user's model by id sent from req
+
+        //hash the new password
+        const newPass = await bcrypt.hash(newPassword, 10);
+        //update password in DB
+        const updateUser = await user.findOneAndUpdate({password: newPass});
         
         //send mail for updated password
         await mailSender(email, "Password updated", "Your password has been changed");
