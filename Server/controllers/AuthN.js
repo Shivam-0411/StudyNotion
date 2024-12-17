@@ -1,5 +1,4 @@
 //this is authentication file, here authentication (process of verifying who the user is) is done that if the user is new or old, if new -> sign up, if old -> login
-
 const user = require("../models/user");
 const otpGenerator = require("otp-generator");
 const OTP = require("../models/otp");
@@ -109,8 +108,9 @@ exports.signUp = async(req, res) => {
         }
         //hash passwords using bcrypt
         const hashedPassword = await bcrypt.hash(password, 10);
-        //create entry in DB
+        //create entry for profile in DB
         const createProfile = await profile.create({gender: null, dateOfBirth: null, about: null, contactNumber: null});
+        //create entry for user in DB
         const newUser = await user.create(
             {
                 firstName, 
@@ -125,7 +125,8 @@ exports.signUp = async(req, res) => {
         //res send
         res.status(200).json({
             success: true,
-            message: "User registered successfully"
+            message: "User registered successfully",
+            newUser
         })
     } catch (error) {
         console.log(error);
@@ -198,13 +199,13 @@ exports.login = async(req, res) => {
 //changePassword
 exports.changePassword = async(req, res) => {
     try {
-        //get data from req body -> oldPassword, newPassword, confirmNewPassword
-        const {oldPassword, newPassword, confirmPassword} = req.body;
+        //get data from req body -> email, newPassword, confirmNewPassword
+        const {email, newPassword, confirmPassword} = req.body;
         //validate the newPasswords
         if(!newPassword || !confirmPassword) {
             return res.status(401).json({
                 success: false,
-                message: "Please enter a password"
+                message: "All fields are required"
             })
         }
         if(newPassword !== confirmPassword) {
@@ -214,16 +215,29 @@ exports.changePassword = async(req, res) => {
             })
         }
         //fetch user data from user's model by id sent from req
-
+        const userDetails = await user.findOne({email});
+        if(!userDetails) {
+            return res.status(401).json({
+                success: false,
+                message: "Error in fetching email"
+            })
+        }
         //hash the new password
         const newPass = await bcrypt.hash(newPassword, 10);
         //update password in DB
-        const updateUser = await user.findOneAndUpdate({password: newPass});
+        const updateUser = await user.findOneAndUpdate({email: email}, {password: newPass});
         
         //send mail for updated password
         await mailSender(email, "Password updated", "Your password has been changed");
         //res 
+        return res.status(200).json({
+            success: true,
+            message: "Password has been updated successfully"
+        })
     } catch (error) {
-        
+        return res.status(500).json({
+            success: false,
+            message: "Error while updating password"
+        })
     }
 }
