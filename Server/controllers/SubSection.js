@@ -44,7 +44,6 @@ exports.createSubSection = async(req, res) => {
     }
 }
 
-// -> HW - delete subsection
 exports.updateSubsection = async(req, res) => {
     try {
         //updated data fetch

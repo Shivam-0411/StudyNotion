@@ -20,7 +20,7 @@ exports.createSection = async(req, res) => {
             populate: ({
                 path: "subSection",
             })
-        });
+        }).exec();
         //return res
         return res.status(200).json({
             success: true,

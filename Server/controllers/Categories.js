@@ -39,3 +39,5 @@ exports.getAllCategories = async(req, res) => {
         })
     }
 }
+
+//add lines from helper - Category.js

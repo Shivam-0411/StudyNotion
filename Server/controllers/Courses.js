@@ -6,10 +6,10 @@ const {uploadImageToCloudinary} = require("../utils/imageUploader");
 //create courses function
 exports.createCourse = async(req, res) => {
     try {
-        const {courseName, courseDescription, whatYouWillLearn, price, category} = req.body;
+        const {courseName, courseDescription, whatYouWillLearn, price, category, tag} = req.body;
         const thumbnail = req.files.thumbnailImage;
 
-        if(!courseName || !courseDescription || !whatYouWillLearn || !price || !category || !thumbnail) {
+        if(!courseName || !courseDescription || !whatYouWillLearn || !price || !category || !thumbnail || !tag) {
             return res.status(400).json({
                 success: false,
                 message: "All fields are required"
@@ -18,7 +18,7 @@ exports.createCourse = async(req, res) => {
 
         //check for instructor details
         const userId = req.user.id; 
-        const instructorDetails = await user.findById(userId);
+        const instructorDetails = await user.findById(userId, {accountType: "Instructor"});
         console.log("Instructor Details", instructorDetails);
 
         if(!instructorDetails) {
@@ -47,16 +47,18 @@ exports.createCourse = async(req, res) => {
                 courseDescription, 
                 instructor: instructorDetails._id,
                 whatYouWillLearn: whatYouWillLearn, 
+                tag: tag,
                 category: categoryDetails._id,
-                thumbnail: thumbnailImage.secure_url
+                thumbnail: thumbnailImage.secure_url,
+                instructions: instructions,
             }
         )
 
         //add the course id to user collection in DB
-        await user.findByIdAndUpdate({instructorDetails: instructorDetails._id}, {$push: {courses: newCourse}}, {new: true});
+        await user.findByIdAndUpdate({_id: instructorDetails._id}, {$push: {courses: newCourse._id}}, {new: true});
 
         //update category collection in DB
-        await Category.findByIdAndUpdate({categoryDetails: categoryDetails._id}, {$push: {course: newCourse}}, {new: true});
+        await Category.findByIdAndUpdate({_id: categoryDetails._id}, {$push: {course: newCourse._id}}, {new: true});
 
         return res.status(200).json({
             success: true,

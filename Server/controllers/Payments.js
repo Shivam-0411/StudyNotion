@@ -17,7 +17,7 @@ exports.capturePayment = async(req, res) => {
                 success: false,
                 message: "Please provide valid course details"
             })
-        }
+        } 
 
         let course;
         try {

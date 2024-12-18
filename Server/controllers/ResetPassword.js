@@ -62,7 +62,7 @@ exports.resetPassword = async(res, req) => {
         if(userDetails.resetPasswordExpires < Date.now()) {
             return res.json({
                 success: false,
-                message: "Token expired, "
+                message: "Token expired, try again later"
             })
         }
         //hash password

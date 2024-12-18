@@ -42,7 +42,7 @@ exports.deleteAccount = async(req, res) => {
     try {
         //HW: schedule a task like deleting account (cron job), unenroll users from all the courses he was enrolled in
         const id = req.user.id;
-        const userDetails = await User.findById(id);
+        const userDetails = await User.findById({_id: id});
         if(!userDetails) {
             return res.status(400).json({
                 success: false,
@@ -63,3 +63,24 @@ exports.deleteAccount = async(req, res) => {
         })
     }
 }
+
+exports.getAllUserDetails = async (req, res) => {
+    try {
+        const id = req.user.id;
+        const userDetails = await User.findById(id).populate("additionalDetails").exec();
+       
+        console.log(userDetails);
+        return res.status(200).json({
+            success: true,
+            message: "User Data fetched successfully",
+            userDetails,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+//updateDisplayPicture
