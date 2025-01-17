@@ -1,12 +1,13 @@
 const mailSender = require("../utils/mailSender");
 const user = require("../models/user");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 
 //reset password token
 exports.resetPasswordToken = async(req, res) => {
     try {
         //fetch user mail
-        const { email } = req.body;
+        const email = req.body.email;
         //check if mail exists and validate it
         const existingUser = await user.findOne({email: email});
         if(!existingUser) {
@@ -31,6 +32,7 @@ exports.resetPasswordToken = async(req, res) => {
     } catch (error) {
         console.log(error);
         return res.status(401).json({
+            error: error.message,
             success: false,
             message: "Something went wrong while sending password reset link"
         })
@@ -38,7 +40,7 @@ exports.resetPasswordToken = async(req, res) => {
 }
 
 //reset password
-exports.resetPassword = async(res, req) => {
+exports.resetPassword = async(req, res) => {
     try {
         //fetch data
         const {password, confirmPassword, token} = req.body; //token will be taken from url in frontend

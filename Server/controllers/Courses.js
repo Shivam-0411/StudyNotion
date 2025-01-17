@@ -1,12 +1,13 @@
 const user = require("../models/user");
 const Category = require("../models/category");
 const course = require("../models/course");
+const profile = require("../models/profile");
 const {uploadImageToCloudinary} = require("../utils/imageUploader");
 
 //create courses function
 exports.createCourse = async(req, res) => {
     try {
-        const {courseName, courseDescription, whatYouWillLearn, price, category, tag} = req.body;
+        const {courseName, courseDescription, whatYouWillLearn, price, category, tag, status} = req.body;
         const thumbnail = req.files.thumbnailImage;
 
         if(!courseName || !courseDescription || !whatYouWillLearn || !price || !category || !thumbnail || !tag) {
@@ -50,7 +51,7 @@ exports.createCourse = async(req, res) => {
                 tag: tag,
                 category: categoryDetails._id,
                 thumbnail: thumbnailImage.secure_url,
-                instructions: instructions,
+                status: status
             }
         )
 
@@ -95,6 +96,50 @@ exports.showAllCourses = async(req, res) => {
             success: false,
             message: "Could not fetch all courses",
             error: error.message
+        })
+    }
+}
+
+//get entire course details
+exports.getCourseDetails = async(req, res) => {
+    try {
+        //get course id
+        const {courseId} = req.body;
+        //find course details
+        const courseDetails = await course.find({_id: courseId}).
+        populate({
+            path: "instructor",
+            populate: {
+                path: "additionalDetails",
+            }
+        }).
+        populate("category").
+        // populate("ratingAndReviews").
+        populate({
+            path: "courseContent",
+            populate: {
+                path: "subSection"
+            }
+        }).exec();
+
+        //validations
+        if(!courseDetails) {
+            return res.status(400).json({
+                success: false,
+                message: `Could not find the course with ${courseId}`
+            })
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Course details fetched successfully",
+            courseDetails
+        })
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: error.message
         })
     }
 }

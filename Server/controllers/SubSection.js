@@ -1,10 +1,9 @@
-const subSection = require("../models/subSection");
 const section = require("../models/section");
-const {uploadImageToClodinary} = require("../utils/imageUploader");
+const subSection = require("../models/subSection");
+const {uploadImageToCloudinary} = require("../utils/imageUploader");
 // require("dotenv").config();
 
-
-exports.createSubSection = async(req, res) => {
+exports.createSubsection = async(req, res) => {
     try {
         //fetch data from req 
         const {sectionId, title, timeDuration, description} = req.body;
@@ -17,8 +16,8 @@ exports.createSubSection = async(req, res) => {
                 message: "All fields are required"
             })
         }
-        //upload video to cloudinart
-        const uploadDetails = await uploadImageToClodinary(video, process.env.FOLDER_NAME);
+        //upload video to cloudinary
+        const uploadDetails = await uploadImageToCloudinary(video, process.env.FOLDER_NAME);
         //create a subsection
         const subSectionDetails = await subSection.create({
             title: title,
@@ -39,7 +38,8 @@ exports.createSubSection = async(req, res) => {
     } catch (error) {
         return res.status(500).json({
             success: false,
-            message: "Something went wrong while creating subsection"
+            message: "Something went wrong while creating subsection",
+            error: error.message
         })
     }
 }
@@ -47,11 +47,12 @@ exports.createSubSection = async(req, res) => {
 exports.updateSubsection = async(req, res) => {
     try {
         //updated data fetch
-        const {sectionId, subSectionId, title, timeDuration, description} = req.body;
+        const {subSectionId, title, timeDuration, description} = req.body;
         const video = req.files.thumbnail;
 
-        const subSection = await subSection.findById(subSectionId);
-        if(!subSection) {
+        const SubSection = await subSection.findById(subSectionId);
+
+        if(!SubSection) {
             return res.status(400).json({
                 success: false,
                 message: "No such subsection exists"
@@ -59,28 +60,33 @@ exports.updateSubsection = async(req, res) => {
         }
         
         if(title) {
-            subSection.title = title;
+            SubSection.title = title;
         }
         if(description) {
-            subSection.description = description;
+            SubSection.description = description;
         }
         if(timeDuration) {
-            subSection.timeDuration = timeDuration;
+            SubSection.timeDuration = timeDuration;
         }
 
         if(video) {
             //upload the new thumbnail on cloudinary
-            const uploadDetails = await uploadImageToClodinary(video, process.env.FOLDER_NAME);
-            subSection.videoUrl = uploadDetails.secure_url;
+            const uploadDetails = await uploadImageToCloudinary(video, process.env.FOLDER_NAME);
+            SubSection.videoUrl = uploadDetails.secure_url;
         }
 
         //update the data in db
-        await subSection.save();
+        await SubSection.save();
         //return response
+        return res.status(200).json({
+            success: true,
+            message: "Subsection updated successfully"
+        })
     } catch (error) {
         return res.status(500).json({
             success: false,
-            message: "Something went wrong while updating subsection"
+            message: "Something went wrong while updating subsection",
+            error: error.message
         })
     }
 }
@@ -94,8 +100,11 @@ exports.deleteSubsection = async(req, res) => {
                 message: "Either of section or subsection does not exists"
             })
         }
-        
-        const updatedSection = await section.findByIdAndDelete({subSectionId});
+
+        //update section and remove subsection
+        await section.updateOne({_id: sectionId}, {$pull: {subSection: subSectionId}});;
+        await subSection.findByIdAndDelete(subSectionId);
+
         return res.status(200).json({
             success: true,
             message: "Subsection successfully removed"
@@ -103,7 +112,8 @@ exports.deleteSubsection = async(req, res) => {
     } catch (error) {
         return res.status(500).json({
             success: false,
-            message: "Something went wrong while deleting subsection"
+            message: "Something went wrong while deleting subsection",
+            error: error.message
         })
     }
 }

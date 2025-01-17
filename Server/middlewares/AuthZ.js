@@ -1,7 +1,6 @@
 //this is authorization file, here users are made sure as if they are authorzied to visit
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
-const user = require("../models/user");
 
 //auth
 exports.auth = async(req, res, next) => {

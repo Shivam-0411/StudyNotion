@@ -1,21 +1,20 @@
 const mongoose = require("mongoose");
-const { resetPasswordToken } = require("../controllers/ResetPassword");
 
 const userSchema = new mongoose.Schema({
     firstName: {
         type: String,
         required: true,
-        trim: true //???
+        trim: true
     },
     lastName: {
         type: String,
         required: true,
-        trim: true //???
+        trim: true 
     },
     email: {
         type: String,
         required: true,
-        trim: true //???
+        trim: true,
     },
     password: {
         type: String,

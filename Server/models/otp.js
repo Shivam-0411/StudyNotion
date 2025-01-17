@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const mailSender = require("../utils/mailSender");
+const emailTemplate = require("../mail/templates/emailVerificationTemplate");
 
 const otpSchema = new mongoose.Schema({
     email: {
@@ -13,14 +14,14 @@ const otpSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now(),
-        expires: 2*60
+        expires: 5*60
     }
 })
 
-//These 2 functions are middlewares
+//This function is middleware which will be called before saving the OTP in the database
 async function sendVerificationMail(email, otp) {
     try {
-        const mailResponse = await mailSender(email, "Mail sent by Shivam", otp);
+        const mailResponse = await mailSender(email, "Mail sent by Shivam", emailTemplate(otp));
         console.log("Mail sent successfully" , mailResponse);
     } catch (error) {
         console.log("Error occured while sending mails", error);

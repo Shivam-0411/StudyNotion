@@ -18,7 +18,7 @@ exports.sendOTP = async(req, res) => {
 
         //if mail present, return with false...if not present, continue
         if(isMailPresent) {
-            res.status(401).json({
+            return res.status(401).json({
                 success: false,
                 message: "User already exists"
             })
@@ -49,10 +49,10 @@ exports.sendOTP = async(req, res) => {
         const otpBody = await OTP.create(otpPayload);
         console.log(otpBody);
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: "OTP Sent successfully",
-            OTP
+            otp
         })
     } catch (error) {
         console.log(error);
@@ -70,7 +70,7 @@ exports.signUp = async(req, res) => {
         const {firstName, lastName, email, password, confirmPassword, accountType, otp} = req.body;
         //validate credentials - email, passwords, otp, name
         if(!firstName || !lastName || !email || !password || !confirmPassword || !otp) {
-            res.status(403).json({
+            return res.status(403).json({
                 success: false,
                 message: "All feilds are mandatory"
             })
@@ -85,23 +85,23 @@ exports.signUp = async(req, res) => {
         //check if user already exists
         const existingUser = await user.findOne({email});
         if(existingUser) {
-            res.status(401).json({
+            return res.status(401).json({
                 success: false,
                 message: "User already exists"
             })
         }
         //find most recent otp from database
-        const otpLatest = await OTP.find({email}).sort({createdAt:-1}).limit(1);
+        const otpLatest = await OTP.find({email}).sort({createdAt:-1}).limit(1); //otpLatest is an array that contains the latest otp
         console.log(otpLatest);
         //match otps
         if(otpLatest.length == 0) {
             //otp is not found 
-            res.status(400).json({
+            return res.status(400).json({
                 success: false,
                 message: "OTP not found"
             })
-        } else if(otpLatest.otp != otp) {
-            res.status(400).json({
+        } else if(otp != otpLatest[0].otp) { //otpLatest[0] is most recent object in the array
+            return res.status(400).json({
                 success: false,
                 message: "Invalid OTP"
             })
@@ -123,7 +123,7 @@ exports.signUp = async(req, res) => {
             }
         )
         //res send
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: "User registered successfully",
             newUser
@@ -154,7 +154,7 @@ exports.login = async(req, res) => {
         if(!existingUser) {
             return res.status(401).json({
                 success: false,
-                message: "User not found"
+                message: "User is not registered with us"
             })
         }
         //check if passwords match
@@ -163,7 +163,7 @@ exports.login = async(req, res) => {
             const payload = {
                 email: existingUser.email,
                 id: existingUser._id,
-                role: existingUser.accountType
+                accountType: existingUser.accountType
             }
             const token = jwt.sign(payload, process.env.JWT_SECRET, {
                 expiresIn: "2h"
@@ -176,7 +176,7 @@ exports.login = async(req, res) => {
                 httpOnly: true
             }
             //res send
-            res.cookie("token", token, options).status(200).json({
+            return res.cookie("token", token, options).status(200).json({
                 success: true,
                 token,
                 existingUser,
